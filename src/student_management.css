@@ -1,0 +1,39 @@
+table {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+thead th {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    background-color: #f4f4f4;
+}
+
+thead tr:first-child th {
+    text-align: center;
+}
+
+tbody td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.row-even {
+    background-color: #fafafa;
+}
+
+.row-odd {
+    background-color: white;
+}
+
+.action-button {
+    padding: 6px 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
