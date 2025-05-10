@@ -198,7 +198,7 @@ const VaccineDrive = () => {
                         <th style={{borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>Applicable
                             Class
                         </th>
-                        <th style={{borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>Edit</th>
+                        <th style={{borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
