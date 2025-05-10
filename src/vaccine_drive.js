@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import Modal from 'react-modal';
 import {Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip} from 'recharts';
 
 const stubbedStatsResponse = {
@@ -8,9 +9,16 @@ const stubbedStatsResponse = {
 };
 
 const stubbedDrivesResponse = [
-    {id: 1, date: '2025-05-15', dosesAvailable: 100, applicableClass: '10th'},
-    {id: 2, date: '2025-06-01', dosesAvailable: 150, applicableClass: '12th'},
-    {id: 3, date: '2025-07-10', dosesAvailable: 200, applicableClass: '11th'}, // outside 30 days
+    {
+        id: 1,
+        name: 'Drive A',
+        date: '2025-06-06',
+        dosesAvailable: 100,
+        applicableClass: '10th',
+        vaccineName: 'Covishield'
+    },
+    {id: 2, name: 'Drive B', date: '2025-06-01', dosesAvailable: 150, applicableClass: '12th', vaccineName: 'Covaxin'},
+    {id: 3, name: 'Drive C', date: '2025-07-10', dosesAvailable: 200, applicableClass: '11th', vaccineName: 'Sputnik'}, // outside 30 days
 ];
 
 const fetchStubbedStats = () =>
@@ -29,6 +37,8 @@ const fetchStubbedDrives = () =>
 
 const COLORS = ['#1abc9c', '#e74c3c'];
 
+Modal.setAppElement('#root'); // Accessibility: bind modal to your app root
+
 const VaccineDrive = () => {
     const [stats, setStats] = useState(null);
     const [drives, setDrives] = useState([]);
@@ -36,6 +46,16 @@ const VaccineDrive = () => {
     const [loadingDrives, setLoadingDrives] = useState(true);
     const [errorStats, setErrorStats] = useState(null);
     const [errorDrives, setErrorDrives] = useState(null);
+
+    const [modalIsOpen, setModalIsOpen] = useState(false);
+    const [selectedDrive, setSelectedDrive] = useState(null);
+
+    const [formData, setFormData] = useState({
+        name: '',
+        dosesAvailable: '',
+        applicableClass: '',
+        vaccineName: '',
+    });
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -77,6 +97,33 @@ const VaccineDrive = () => {
         fetchStats();
         fetchDrives();
     }, []);
+
+    const openModal = (drive) => {
+        setSelectedDrive(drive);
+        setFormData({
+            name: drive.name || '',
+            dosesAvailable: drive.dosesAvailable || '',
+            applicableClass: drive.applicableClass || '',
+            vaccineName: drive.vaccineName || '',
+        });
+        setModalIsOpen(true);
+    };
+
+    const closeModal = () => {
+        setModalIsOpen(false);
+        setSelectedDrive(null);
+    };
+
+    const handleChange = (e) => {
+        const {name, value} = e.target;
+        setFormData(prev => ({...prev, [name]: value}));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // For now, no action on submit
+        closeModal();
+    };
 
     if (loadingStats || loadingDrives) return <div className="content"><p>Loading vaccine drive data...</p></div>;
     if (errorStats) return <div className="content"><p>Error: {errorStats}</p></div>;
@@ -171,8 +218,7 @@ const VaccineDrive = () => {
                                         border: 'none',
                                         borderRadius: '4px',
                                     }}
-                                    onClick={() => {
-                                    }}
+                                    onClick={() => openModal(drive)}
                                     aria-label={`Edit drive ${drive.name}`}
                                 >
                                     Edit
@@ -183,6 +229,98 @@ const VaccineDrive = () => {
                     </tbody>
                 </table>
             )}
+
+            <Modal
+                isOpen={modalIsOpen}
+                onRequestClose={closeModal}
+                contentLabel="Edit Vaccination Drive"
+                style={{
+                    content: {
+                        maxWidth: '400px',
+                        margin: 'auto',
+                        inset: '40px',
+                        padding: '20px',
+                    },
+                    overlay: {
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                    },
+                }}
+            >
+                <h2>Edit Vaccination Drive</h2>
+                <form onSubmit={handleSubmit}>
+                    <div style={{marginBottom: '12px'}}>
+                        <label>
+                            Name:
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                style={{width: '100%', padding: '6px', marginTop: '4px'}}
+                                required
+                            />
+                        </label>
+                    </div>
+                    <div style={{marginBottom: '12px'}}>
+                        <label>
+                            Number of Doses:
+                            <input
+                                type="number"
+                                name="dosesAvailable"
+                                value={formData.dosesAvailable}
+                                onChange={handleChange}
+                                style={{width: '100%', padding: '6px', marginTop: '4px'}}
+                                min="0"
+                                required
+                            />
+                        </label>
+                    </div>
+                    <div style={{marginBottom: '12px'}}>
+                        <label>
+                            Applicable Classes:
+                            <input
+                                type="text"
+                                name="applicableClass"
+                                value={formData.applicableClass}
+                                onChange={handleChange}
+                                style={{width: '100%', padding: '6px', marginTop: '4px'}}
+                                required
+                            />
+                        </label>
+                    </div>
+                    <div style={{marginBottom: '12px'}}>
+                        <label>
+                            Vaccine Name:
+                            <input
+                                type="text"
+                                name="vaccineName"
+                                value={formData.vaccineName}
+                                onChange={handleChange}
+                                style={{width: '100%', padding: '6px', marginTop: '4px'}}
+                                required
+                            />
+                        </label>
+                    </div>
+                    <div style={{textAlign: 'right'}}>
+                        <button
+                            type="button"
+                            onClick={closeModal}
+                            style={{marginRight: '10px', padding: '6px 12px'}}
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#1abc9c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px'
+                        }}>
+                            Submit
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 };
