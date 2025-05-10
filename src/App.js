@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Sidebar from './sidebar';
 import './App.css';
 
-const Home = () => <div className="content"><h1>Home Page</h1></div>;
 const VaccineDrive = () => <div className="content"><h1>Vaccination Drive Management</h1></div>;
 const Dashboard = () => <div className="content"><h1>Dashboard</h1></div>;
 const StudentManagement = () => <div className="content"><h1>Student Management</h1></div>;
@@ -19,7 +18,6 @@ const App = () => {
                     </header>
                     <main className="main-content">
                         <Routes>
-                            <Route path="/" element={<Home />} />
                             <Route path="/vaccine-drive" element={<VaccineDrive />} />
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/student-management" element={<StudentManagement />} />
