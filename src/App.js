@@ -1,25 +1,29 @@
-import logo from './logo.svg';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Sidebar from './sidebar';
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const Home = () => <div className="content"><h1>Home Page</h1></div>;
+const VaccineDrive = () => <div className="content"><h1>Vaccination Drive Management</h1></div>;
+const Dashboard = () => <div className="content"><h1>Dashboard</h1></div>;
+const StudentManagement = () => <div className="content"><h1>Student Management</h1></div>;
+
+const App = () => {
+    return (
+        <Router>
+            <div className="app">
+                <Sidebar />
+                <div className="main-content">
+                    <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/vaccine-drive" element={<VaccineDrive />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/student-management" element={<StudentManagement />} />
+                    </Routes>
+                </div>
+            </div>
+        </Router>
+    );
+};
 
 export default App;
