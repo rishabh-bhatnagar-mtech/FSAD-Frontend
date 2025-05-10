@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Sidebar from './sidebar';
 import './App.css';
 
@@ -13,13 +13,18 @@ const App = () => {
         <Router>
             <div className="app">
                 <Sidebar />
-                <div className="main-content">
-                    <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/vaccine-drive" element={<VaccineDrive />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/student-management" element={<StudentManagement />} />
-                    </Routes>
+                <div className="main-area">
+                    <header className="topbar">
+                        <div className="profile-circle" title="Robert Brown">RB</div>
+                    </header>
+                    <main className="main-content">
+                        <Routes>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/vaccine-drive" element={<VaccineDrive />} />
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/student-management" element={<StudentManagement />} />
+                        </Routes>
+                    </main>
                 </div>
             </div>
         </Router>

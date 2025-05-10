@@ -1,38 +1,69 @@
-.App {
-  text-align: center;
+.app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.main-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.topbar {
+    height: 60px;
+    background-color: #f5f5f5;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.main-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1rem 2rem;
 }
 
-.App-link {
-  color: #61dafb;
+.profile-circle {
+    width: 40px;
+    height: 40px;
+    background-color: #1abc9c;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    cursor: default;
+    position: relative;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.profile-circle[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+    z-index: 100;
+}
+
+.profile-circle[title]::after {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
 }
