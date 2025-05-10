@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './sidebar';
 import './App.css';
 
@@ -18,6 +18,7 @@ const App = () => {
                     </header>
                     <main className="main-content">
                         <Routes>
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
                             <Route path="/vaccine-drive" element={<VaccineDrive />} />
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/student-management" element={<StudentManagement />} />
