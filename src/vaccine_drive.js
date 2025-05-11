@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Modal from 'react-modal';
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 Modal.setAppElement('#root');
-
-const COLORS = ['#1abc9c', '#e74c3c'];
 const BACKEND_URL = 'http://localhost:5000';
 
-const VaccineDrive = () => {
-    const [stats, setStats] = useState(null);
+const VaccineDriveManagement = () => {
     const [drives, setDrives] = useState([]);
-    const [loadingStats, setLoadingStats] = useState(true);
     const [loadingDrives, setLoadingDrives] = useState(true);
-    const [errorStats, setErrorStats] = useState(null);
     const [errorDrives, setErrorDrives] = useState(null);
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -28,51 +22,10 @@ const VaccineDrive = () => {
         vaccine_name: '',
     });
 
+    const [dateSortOrder, setDateSortOrder] = useState('asc');
+
     useEffect(() => {
-        const fetchStats = async () => {
-            setLoadingStats(true);
-            try {
-                const res = await fetch(BACKEND_URL + '/stats');
-                if (!res.ok) throw new Error('Failed to fetch stats');
-                const data = await res.json();
-                setStats(data);
-                setErrorStats(null);
-            } catch {
-                setErrorStats('Failed to fetch vaccine drive stats');
-                setStats(null);
-            } finally {
-                setLoadingStats(false);
-            }
-        };
-
-        const fetchDrives = async () => {
-            setLoadingDrives(true);
-            try {
-                const res = await fetch(BACKEND_URL + '/drives');
-                if (!res.ok) throw new Error('Failed to fetch drives');
-                const data = await res.json();
-
-                const today = new Date();
-                const in30Days = new Date();
-                in30Days.setDate(today.getDate() + 30);
-
-                const upcoming = data.filter(drive => {
-                    const driveDate = new Date(drive.date);
-                    return driveDate >= today && driveDate <= in30Days;
-                });
-
-                setDrives(upcoming);
-                setErrorDrives(null);
-            } catch {
-                setErrorDrives('Failed to fetch drives');
-                setDrives([]);
-            } finally {
-                setLoadingDrives(false);
-            }
-        };
-
-        fetchStats();
-        fetchDrives();
+        refreshDrives();
     }, []);
 
     const refreshDrives = async () => {
@@ -154,72 +107,29 @@ const VaccineDrive = () => {
                 alert(err.message);
             }
         } else {
-            // Optionally implement edit here
             closeModal();
         }
     };
 
-    if (loadingStats || loadingDrives)
-        return <div className="content"><p>Loading vaccine drive data...</p></div>;
-    if (errorStats) return <div className="content"><p>Error: {errorStats}</p></div>;
-    if (errorDrives) return <div className="content"><p>Error: {errorDrives}</p></div>;
+    const toggleDateSort = () => {
+        setDateSortOrder(order => (order === 'asc' ? 'desc' : 'asc'));
+    };
 
-    const pieData = stats
-        ? [
-            { name: 'Vaccinated', value: stats.vaccinatedStudents },
-            { name: 'Unvaccinated', value: stats.unvaccinatedStudents },
-        ]
-        : [];
+    const sortedDrives = [...drives].sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateSortOrder === 'asc'
+            ? dateA - dateB
+            : dateB - dateA;
+    });
+
+    if (loadingDrives)
+        return <div className="content"><p>Loading drives...</p></div>;
+    if (errorDrives) return <div className="content"><p>Error: {errorDrives}</p></div>;
 
     return (
         <div className="content">
-            <h1>Vaccination Drive Management</h1>
-            <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-                <div style={{ width: 300, height: 300 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={pieData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={100}
-                                label
-                            >
-                                {pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                            <Legend verticalAlign="bottom" height={36} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
-                <table style={{ borderCollapse: 'collapse', width: '300px' }}>
-                    <thead>
-                    <tr>
-                        <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left', padding: '8px' }}>Category</th>
-                        <th style={{ borderBottom: '1px solid #ddd', textAlign: 'right', padding: '8px' }}>Count</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td style={{ padding: '8px' }}>Total Students</td>
-                        <td style={{ padding: '8px', textAlign: 'right' }}>{stats.totalStudents}</td>
-                    </tr>
-                    <tr>
-                        <td style={{ padding: '8px' }}>Vaccinated Students</td>
-                        <td style={{ padding: '8px', textAlign: 'right' }}>{stats.vaccinatedStudents}</td>
-                    </tr>
-                    <tr>
-                        <td style={{ padding: '8px' }}>Unvaccinated Students</td>
-                        <td style={{ padding: '8px', textAlign: 'right' }}>{stats.unvaccinatedStudents}</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-
+            <h1>Vaccine Drive Management</h1>
             <div style={{ margin: '24px 0' }}>
                 <button
                     style={{
@@ -236,16 +146,21 @@ const VaccineDrive = () => {
                     Add Drive
                 </button>
             </div>
-
-            <h2 style={{ marginTop: '2rem' }}>Upcoming Vaccination Drives (Next 30 Days)</h2>
-            {drives.length === 0 ? (
-                <p>No upcoming drives in the next 30 days.</p>
+            {sortedDrives.length === 0 ? (
+                <p>No drives found.</p>
             ) : (
-                <table style={{ borderCollapse: 'collapse', width: '100%', maxWidth: '700px' }}>
+                <table style={{ borderCollapse: 'collapse', width: '100%', maxWidth: '900px' }}>
                     <thead>
                     <tr>
                         <th style={{ borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Sr No</th>
-                        <th style={{ borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Date</th>
+                        <th style={{ borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>ID</th>
+                        <th style={{ borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Name</th>
+                        <th
+                            style={{ borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }}
+                            onClick={toggleDateSort}
+                        >
+                            Date {dateSortOrder === 'asc' ? '▲' : '▼'}
+                        </th>
                         <th style={{ borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Doses Available</th>
                         <th style={{ borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Applicable Classes</th>
                         <th style={{ borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Vaccine Name</th>
@@ -253,9 +168,11 @@ const VaccineDrive = () => {
                     </tr>
                     </thead>
                     <tbody>
-                    {drives.map((drive, index) => (
+                    {sortedDrives.map((drive, index) => (
                         <tr key={drive.id}>
                             <td style={{ padding: '8px' }}>{index + 1}</td>
+                            <td style={{ padding: '8px' }}>{drive.id}</td>
+                            <td style={{ padding: '8px' }}>{drive.name}</td>
                             <td style={{ padding: '8px' }}>{new Date(drive.date).toLocaleDateString()}</td>
                             <td style={{ padding: '8px' }}>{drive.doses_available}</td>
                             <td style={{ padding: '8px' }}>
@@ -408,4 +325,4 @@ const VaccineDrive = () => {
     );
 };
 
-export default VaccineDrive;
+export default VaccineDriveManagement;
