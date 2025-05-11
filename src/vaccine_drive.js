@@ -2,42 +2,11 @@ import React, {useEffect, useState} from 'react';
 import Modal from 'react-modal';
 import {Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip} from 'recharts';
 
-const stubbedStatsResponse = {
-    totalStudents: 500,
-    vaccinatedStudents: 350,
-    unvaccinatedStudents: 150,
-};
-
-const stubbedDrivesResponse = [
-    {
-        id: 1,
-        name: 'Drive A',
-        date: '2025-06-06',
-        dosesAvailable: 100,
-        applicableClass: '10th',
-        vaccineName: 'Covishield'
-    },
-    {id: 2, name: 'Drive B', date: '2025-06-01', dosesAvailable: 150, applicableClass: '12th', vaccineName: 'Covaxin'},
-    {id: 3, name: 'Drive C', date: '2025-07-10', dosesAvailable: 200, applicableClass: '11th', vaccineName: 'Sputnik'}, // outside 30 days
-];
-
-const fetchStubbedStats = () =>
-    new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(stubbedStatsResponse);
-        }, 1000);
-    });
-
-const fetchStubbedDrives = () =>
-    new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(stubbedDrivesResponse);
-        }, 1000);
-    });
+Modal.setAppElement('#root');
 
 const COLORS = ['#1abc9c', '#e74c3c'];
 
-Modal.setAppElement('#root'); // Accessibility: bind modal to your app root
+const BACKEND_URL = 'http://localhost:5000'
 
 const VaccineDrive = () => {
     const [stats, setStats] = useState(null);
@@ -52,15 +21,18 @@ const VaccineDrive = () => {
 
     const [formData, setFormData] = useState({
         name: '',
-        dosesAvailable: '',
-        applicableClass: '',
-        vaccineName: '',
+        doses_available: '',
+        applicable_classes: '',
+        vaccine_name: '',
     });
 
     useEffect(() => {
         const fetchStats = async () => {
+            setLoadingStats(true);
             try {
-                const data = await fetchStubbedStats();
+                const res = await fetch(BACKEND_URL + '/stats');
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                const data = await res.json();
                 setStats(data);
                 setErrorStats(null);
             } catch {
@@ -72,8 +44,11 @@ const VaccineDrive = () => {
         };
 
         const fetchDrives = async () => {
+            setLoadingDrives(true);
             try {
-                const data = await fetchStubbedDrives();
+                const res = await fetch(BACKEND_URL + '/drives');
+                if (!res.ok) throw new Error('Failed to fetch drives');
+                const data = await res.json();
 
                 const today = new Date();
                 const in30Days = new Date();
@@ -102,9 +77,11 @@ const VaccineDrive = () => {
         setSelectedDrive(drive);
         setFormData({
             name: drive.name || '',
-            dosesAvailable: drive.dosesAvailable || '',
-            applicableClass: drive.applicableClass || '',
-            vaccineName: drive.vaccineName || '',
+            doses_available: drive.doses_available || '',
+            applicable_classes: Array.isArray(drive.applicable_classes)
+                ? drive.applicable_classes.join(',')
+                : drive.applicable_classes || '',
+            vaccine_name: drive.vaccine_name || '',
         });
         setModalIsOpen(true);
     };
@@ -125,14 +102,17 @@ const VaccineDrive = () => {
         closeModal();
     };
 
-    if (loadingStats || loadingDrives) return <div className="content"><p>Loading vaccine drive data...</p></div>;
+    if (loadingStats || loadingDrives)
+        return <div className="content"><p>Loading vaccine drive data...</p></div>;
     if (errorStats) return <div className="content"><p>Error: {errorStats}</p></div>;
     if (errorDrives) return <div className="content"><p>Error: {errorDrives}</p></div>;
 
-    const pieData = [
-        {name: 'Vaccinated', value: stats.vaccinatedStudents},
-        {name: 'Unvaccinated', value: stats.unvaccinatedStudents},
-    ];
+    const pieData = stats
+        ? [
+            {name: 'Vaccinated', value: stats.vaccinatedStudents},
+            {name: 'Unvaccinated', value: stats.unvaccinatedStudents},
+        ]
+        : [];
 
     return (
         <div className="content">
@@ -196,7 +176,9 @@ const VaccineDrive = () => {
                             Available
                         </th>
                         <th style={{borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>Applicable
-                            Class
+                            Classes
+                        </th>
+                        <th style={{borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>Vaccine Name
                         </th>
                         <th style={{borderBottom: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>Actions</th>
                     </tr>
@@ -206,8 +188,13 @@ const VaccineDrive = () => {
                         <tr key={drive.id}>
                             <td style={{padding: '8px'}}>{index + 1}</td>
                             <td style={{padding: '8px'}}>{new Date(drive.date).toLocaleDateString()}</td>
-                            <td style={{padding: '8px'}}>{drive.dosesAvailable}</td>
-                            <td style={{padding: '8px'}}>{drive.applicableClass}</td>
+                            <td style={{padding: '8px'}}>{drive.doses_available}</td>
+                            <td style={{padding: '8px'}}>
+                                {Array.isArray(drive.applicable_classes)
+                                    ? drive.applicable_classes.join(', ')
+                                    : drive.applicable_classes}
+                            </td>
+                            <td style={{padding: '8px'}}>{drive.vaccine_name}</td>
                             <td style={{padding: '8px'}}>
                                 <button
                                     style={{
@@ -266,8 +253,8 @@ const VaccineDrive = () => {
                             Number of Doses:
                             <input
                                 type="number"
-                                name="dosesAvailable"
-                                value={formData.dosesAvailable}
+                                name="doses_available"
+                                value={formData.doses_available}
                                 onChange={handleChange}
                                 style={{width: '100%', padding: '6px', marginTop: '4px'}}
                                 min="0"
@@ -280,8 +267,8 @@ const VaccineDrive = () => {
                             Applicable Classes:
                             <input
                                 type="text"
-                                name="applicableClass"
-                                value={formData.applicableClass}
+                                name="applicable_classes"
+                                value={formData.applicable_classes}
                                 onChange={handleChange}
                                 style={{width: '100%', padding: '6px', marginTop: '4px'}}
                                 required
@@ -293,8 +280,8 @@ const VaccineDrive = () => {
                             Vaccine Name:
                             <input
                                 type="text"
-                                name="vaccineName"
-                                value={formData.vaccineName}
+                                name="vaccine_name"
+                                value={formData.vaccine_name}
                                 onChange={handleChange}
                                 style={{width: '100%', padding: '6px', marginTop: '4px'}}
                                 required
