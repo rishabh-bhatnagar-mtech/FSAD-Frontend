@@ -8,11 +8,6 @@ const Sidebar = () => {
             <h2>Menu</h2>
             <ul>
                 <li>
-                    <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'active' : '')}>
-                        Dashboard
-                    </NavLink>
-                </li>
-                <li>
                     <NavLink to="/vaccine-drive" className={({ isActive }) => (isActive ? 'active' : '')}>
                         Vaccination Drive Management
                     </NavLink>
