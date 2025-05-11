@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import Modal from 'react-modal';
+import CSVReader from 'react-csv-reader';
 import './student_management.css';
 
 const stubbedStudentsResponse = [
@@ -56,6 +57,14 @@ const fetchStubbedStudents = () =>
 
 Modal.setAppElement('#root');
 
+const sampleCsvContent =
+    'id,name,class,vaccine1,driveId1,vaccine2,driveId2\n' +
+    'STU2001,Ananya,10th,Covishield,DRV001,Covaxin,DRV002\n' +
+    'STU2002,Rahul,9th,Covishield,DRV001,,\n' +
+    'STU2003,Meera,11th,Covaxin,DRV002,,\n' +
+    'STU2004,Dev,10th,Sputnik,DRV003,,\n' +
+    'STU2005,Simran,12th,,,\n';
+
 const StudentManagement = () => {
     const [students, setStudents] = useState([]);
     const [vaccineTypes, setVaccineTypes] = useState([]);
@@ -63,13 +72,16 @@ const StudentManagement = () => {
     const [error, setError] = useState(null);
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
+    const [isAddMode, setIsAddMode] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [formData, setFormData] = useState({
         id: '',
         name: '',
         class: '',
-        vaccines: {}, // { vaccineName: { hasVaccine: bool, driveId: string } }
+        vaccines: {},
     });
+
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const fetchStudents = async () => {
@@ -95,7 +107,25 @@ const StudentManagement = () => {
         fetchStudents();
     }, []);
 
+    // Add Student Modal
+    const openAddModal = () => {
+        setIsAddMode(true);
+        const vaccinesObj = {};
+        vaccineTypes.forEach(vaccine => {
+            vaccinesObj[vaccine] = {hasVaccine: false, driveId: ''};
+        });
+        setFormData({
+            id: '',
+            name: '',
+            class: '',
+            vaccines: vaccinesObj,
+        });
+        setModalIsOpen(true);
+    };
+
+    // Edit Student Modal
     const openModal = (student) => {
+        setIsAddMode(false);
         setSelectedStudent(student);
         const vaccinesObj = {};
         vaccineTypes.forEach(vaccine => {
@@ -153,10 +183,79 @@ const StudentManagement = () => {
         }));
     };
 
+    // Add or Edit Student
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (isAddMode) {
+            // Generate a new unique ID
+            const newId = `STU${Math.floor(1000 + Math.random() * 9000)}`;
+            setStudents(prev => [
+                ...prev,
+                {
+                    id: newId,
+                    name: formData.name,
+                    class: formData.class,
+                    vaccines: Object.entries(formData.vaccines)
+                        .filter(([_, v]) => v.hasVaccine)
+                        .map(([name, v]) => ({name, driveId: v.driveId})),
+                }
+            ]);
+        } else if (selectedStudent) {
+            setStudents(prev => prev.map(s =>
+                s.id === formData.id
+                    ? {
+                        ...s,
+                        name: formData.name,
+                        class: formData.class,
+                        vaccines: Object.entries(formData.vaccines)
+                            .filter(([_, v]) => v.hasVaccine)
+                            .map(([name, v]) => ({name, driveId: v.driveId})),
+                    }
+                    : s
+            ));
+        }
         closeModal();
     };
+
+    // CSV Import Handler
+    const handleCSVImport = (data) => {
+        // Expecting columns: id, name, class, vaccine1, driveId1, vaccine2, driveId2, ...
+        const importedStudents = data.map(row => {
+            const {id, name, class: studentClass, ...rest} = row;
+            // Extract vaccines from rest
+            const vaccines = [];
+            Object.entries(rest).forEach(([key, value]) => {
+                if (key.toLowerCase().startsWith('vaccine') && value) {
+                    const num = key.replace(/[^0-9]/g, '');
+                    const driveKey = `driveId${num}`;
+                    vaccines.push({name: value, driveId: row[driveKey] || ''});
+                }
+            });
+            return {id, name, class: studentClass, vaccines};
+        });
+        setStudents(prev => [...prev, ...importedStudents]);
+        // Update vaccineTypes if new vaccines were imported
+        const allVaccines = new Set(vaccineTypes);
+        importedStudents.forEach(s => s.vaccines.forEach(v => allVaccines.add(v.name)));
+        setVaccineTypes(Array.from(allVaccines).sort());
+    };
+
+    // Search Handler
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+    };
+
+    // Filtered Students
+    const filteredStudents = students.filter(student => {
+        const query = searchQuery.toLowerCase();
+        const vaccinesStr = student.vaccines.map(v => v.name).join(' ').toLowerCase();
+        return (
+            student.name.toLowerCase().includes(query) ||
+            student.class.toLowerCase().includes(query) ||
+            student.id.toLowerCase().includes(query) ||
+            vaccinesStr.includes(query)
+        );
+    });
 
     if (loading) return <div className="content"><p>Loading students...</p></div>;
     if (error) return <div className="content"><p>Error: {error}</p></div>;
@@ -164,6 +263,36 @@ const StudentManagement = () => {
     return (
         <div className="content">
             <h1>Student Management</h1>
+
+            <div style={{marginBottom: '16px'}}>
+                <button className="action-button" onClick={openAddModal} style={{marginRight: '16px'}}>
+                    Add Student
+                </button>
+                <a
+                    href={`data:text/csv;charset=utf-8,${encodeURIComponent(sampleCsvContent)}`}
+                    download="students_sample.csv"
+                    style={{marginRight: '16px'}}
+                >
+                    Download Sample CSV
+                </a>
+                <CSVReader
+                    cssClass="csv-reader-input"
+                    label="Bulk Import Students (CSV): "
+                    onFileLoaded={handleCSVImport}
+                    parserOptions={{header: true, skipEmptyLines: true}}
+                    inputId="csvInput"
+                    inputStyle={{display: 'inline-block', marginLeft: '8px'}}
+                />
+            </div>
+
+            <input
+                type="text"
+                placeholder="Search by name, class, ID, or vaccine"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                style={{marginBottom: '16px', padding: '6px', width: '300px'}}
+            />
+
             <table>
                 <thead>
                 <tr>
@@ -181,7 +310,7 @@ const StudentManagement = () => {
                 </tr>
                 </thead>
                 <tbody>
-                {students.map((student, idx) => (
+                {filteredStudents.map((student, idx) => (
                     <tr key={student.id} className={idx % 2 === 0 ? 'row-even' : 'row-odd'}>
                         <td>{idx + 1}</td>
                         <td>{student.id}</td>
@@ -208,7 +337,7 @@ const StudentManagement = () => {
             <Modal
                 isOpen={modalIsOpen}
                 onRequestClose={closeModal}
-                contentLabel="Edit Student Details"
+                contentLabel={isAddMode ? "Add Student" : "Edit Student Details"}
                 style={{
                     content: {
                         maxWidth: '500px',
@@ -221,7 +350,7 @@ const StudentManagement = () => {
                     },
                 }}
             >
-                <h2>Edit Student Details</h2>
+                <h2>{isAddMode ? "Add Student" : "Edit Student Details"}</h2>
                 <form onSubmit={handleSubmit}>
                     <div style={{marginBottom: '12px'}}>
                         <label>
@@ -242,7 +371,7 @@ const StudentManagement = () => {
                             <input
                                 type="text"
                                 name="id"
-                                value={formData.id}
+                                value={isAddMode ? "(auto-generated)" : formData.id}
                                 readOnly
                                 style={{
                                     width: '100%',
@@ -323,3 +452,4 @@ const StudentManagement = () => {
 };
 
 export default StudentManagement;
+
