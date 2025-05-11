@@ -1,61 +1,7 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import CSVReader from 'react-csv-reader';
 import './student_management.css';
-
-const stubbedStudentsResponse = [
-    {
-        id: 'STU1001',
-        name: 'Aarav',
-        class: '10th',
-        vaccines: [
-            {name: 'Covishield', driveId: 'DRV001'},
-            {name: 'Covaxin', driveId: 'DRV002'},
-        ],
-    },
-    {
-        id: 'STU1002',
-        name: 'Isha',
-        class: '12th',
-        vaccines: [{name: 'Covishield', driveId: 'DRV001'}],
-    },
-    {
-        id: 'STU1003',
-        name: 'Rohan',
-        class: '11th',
-        vaccines: [],
-    },
-    {
-        id: 'STU1004',
-        name: 'Sneha',
-        class: '9th',
-        vaccines: [{name: 'Covaxin', driveId: 'DRV002'}],
-    },
-    {
-        id: 'STU1005',
-        name: 'Karan',
-        class: '10th',
-        vaccines: [
-            {name: 'Covishield', driveId: 'DRV001'},
-            {name: 'Sputnik', driveId: 'DRV003'},
-        ],
-    },
-];
-
-const stubbedDrives = [
-    {id: 'DRV001', name: 'Drive A'},
-    {id: 'DRV002', name: 'Drive B'},
-    {id: 'DRV003', name: 'Drive C'},
-];
-
-const fetchStubbedStudents = () =>
-    new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(stubbedStudentsResponse);
-        }, 1000);
-    });
-
-Modal.setAppElement('#root');
 
 const sampleCsvContent =
     'id,name,class,vaccine1,driveId1,vaccine2,driveId2\n' +
@@ -65,12 +11,16 @@ const sampleCsvContent =
     'STU2004,Dev,10th,Sputnik,DRV003,,\n' +
     'STU2005,Simran,12th,,,\n';
 
+Modal.setAppElement('#root');
+
+const BACKEND_URL = 'http://localhost:5000'
+
 const StudentManagement = () => {
     const [students, setStudents] = useState([]);
     const [vaccineTypes, setVaccineTypes] = useState([]);
+    const [drives, setDrives] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [isAddMode, setIsAddMode] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
@@ -80,39 +30,73 @@ const StudentManagement = () => {
         class: '',
         vaccines: {},
     });
-
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        const fetchStudents = async () => {
+        const fetchDrives = async () => {
             try {
-                const data = await fetchStubbedStudents();
-                setStudents(data);
+                const res = await fetch(BACKEND_URL + '/drives');
+                if (!res.ok) throw new Error('Failed to fetch drives');
+                const data = await res.json();
+                setDrives(data);
+            } catch (err) {
+                setDrives([]);
+            }
+        };
 
+        const fetchStudents = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(BACKEND_URL + '/students');
+                if (!res.ok) throw new Error('Failed to fetch students');
+                const data = await res.json();
+                setStudents(data);
                 const vaccinesSet = new Set();
                 data.forEach(student => {
                     student.vaccines.forEach(v => vaccinesSet.add(v.name));
                 });
                 setVaccineTypes(Array.from(vaccinesSet).sort());
-
                 setError(null);
-            } catch {
-                setError('Failed to fetch student data');
+            } catch (err) {
+                setError(err.message);
                 setStudents([]);
                 setVaccineTypes([]);
             } finally {
                 setLoading(false);
             }
         };
+
+        fetchDrives();
         fetchStudents();
     }, []);
 
-    // Add Student Modal
+    const refreshStudents = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(BACKEND_URL + '/students');
+            if (!res.ok) throw new Error('Failed to fetch students');
+            const data = await res.json();
+            setStudents(data);
+            const vaccinesSet = new Set();
+            data.forEach(student => {
+                student.vaccines.forEach(v => vaccinesSet.add(v.name));
+            });
+            setVaccineTypes(Array.from(vaccinesSet).sort());
+            setError(null);
+        } catch (err) {
+            setError(err.message);
+            setStudents([]);
+            setVaccineTypes([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const openAddModal = () => {
         setIsAddMode(true);
         const vaccinesObj = {};
         vaccineTypes.forEach(vaccine => {
-            vaccinesObj[vaccine] = {hasVaccine: false, driveId: ''};
+            vaccinesObj[vaccine] = { hasVaccine: false, driveId: '' };
         });
         setFormData({
             id: '',
@@ -123,7 +107,6 @@ const StudentManagement = () => {
         setModalIsOpen(true);
     };
 
-    // Edit Student Modal
     const openModal = (student) => {
         setIsAddMode(false);
         setSelectedStudent(student);
@@ -150,8 +133,8 @@ const StudentManagement = () => {
     };
 
     const handleInputChange = (e) => {
-        const {name, value} = e.target;
-        setFormData(prev => ({...prev, [name]: value}));
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleVaccineToggle = (vaccine) => {
@@ -163,7 +146,7 @@ const StudentManagement = () => {
                     ...prev.vaccines,
                     [vaccine]: {
                         hasVaccine: !current.hasVaccine,
-                        driveId: !current.hasVaccine ? stubbedDrives[0].id : '',
+                        driveId: !current.hasVaccine && drives.length > 0 ? drives[0].id : '',
                     },
                 },
             };
@@ -183,69 +166,71 @@ const StudentManagement = () => {
         }));
     };
 
-    // Add or Edit Student
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (isAddMode) {
-            // Generate a new unique ID
-            const newId = `STU${Math.floor(1000 + Math.random() * 9000)}`;
-            setStudents(prev => [
-                ...prev,
-                {
-                    id: newId,
-                    name: formData.name,
-                    class: formData.class,
-                    vaccines: Object.entries(formData.vaccines)
-                        .filter(([_, v]) => v.hasVaccine)
-                        .map(([name, v]) => ({name, driveId: v.driveId})),
-                }
-            ]);
-        } else if (selectedStudent) {
-            setStudents(prev => prev.map(s =>
-                s.id === formData.id
-                    ? {
-                        ...s,
-                        name: formData.name,
-                        class: formData.class,
-                        vaccines: Object.entries(formData.vaccines)
-                            .filter(([_, v]) => v.hasVaccine)
-                            .map(([name, v]) => ({name, driveId: v.driveId})),
-                    }
-                    : s
-            ));
+        const studentPayload = {
+            id: formData.id,
+            name: formData.name,
+            class: formData.class,
+            vaccines: Object.entries(formData.vaccines)
+                .filter(([_, v]) => v.hasVaccine)
+                .map(([name, v]) => ({ name, driveId: v.driveId })),
+        };
+
+        try {
+            if (isAddMode) {
+                const response = await fetch(BACKEND_URL + '/students', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify([studentPayload]),
+                });
+                if (!response.ok) throw new Error('Failed to add student');
+            } else {
+                const response = await fetch(BACKEND_URL + `/students/${formData.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(studentPayload),
+                });
+                if (!response.ok) throw new Error('Failed to update student');
+            }
+            await refreshStudents();
+            closeModal();
+        } catch (err) {
+            alert(err.message);
         }
-        closeModal();
     };
 
-    // CSV Import Handler
-    const handleCSVImport = (data) => {
-        // Expecting columns: id, name, class, vaccine1, driveId1, vaccine2, driveId2, ...
+    const handleCSVImport = async (data) => {
         const importedStudents = data.map(row => {
-            const {id, name, class: studentClass, ...rest} = row;
-            // Extract vaccines from rest
+            const { id, name, class: studentClass, ...rest } = row;
             const vaccines = [];
             Object.entries(rest).forEach(([key, value]) => {
                 if (key.toLowerCase().startsWith('vaccine') && value) {
                     const num = key.replace(/[^0-9]/g, '');
                     const driveKey = `driveId${num}`;
-                    vaccines.push({name: value, driveId: row[driveKey] || ''});
+                    vaccines.push({ name: value, driveId: row[driveKey] || '' });
                 }
             });
-            return {id, name, class: studentClass, vaccines};
+            return { id, name, class: studentClass, vaccines };
         });
-        setStudents(prev => [...prev, ...importedStudents]);
-        // Update vaccineTypes if new vaccines were imported
-        const allVaccines = new Set(vaccineTypes);
-        importedStudents.forEach(s => s.vaccines.forEach(v => allVaccines.add(v.name)));
-        setVaccineTypes(Array.from(allVaccines).sort());
+
+        try {
+            const response = await fetch(BACKEND_URL + '/students', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(importedStudents),
+            });
+            if (!response.ok) throw new Error('Failed to import students');
+            await refreshStudents();
+        } catch (err) {
+            alert(err.message);
+        }
     };
 
-    // Search Handler
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
     };
 
-    // Filtered Students
     const filteredStudents = students.filter(student => {
         const query = searchQuery.toLowerCase();
         const vaccinesStr = student.vaccines.map(v => v.name).join(' ').toLowerCase();
@@ -263,15 +248,14 @@ const StudentManagement = () => {
     return (
         <div className="content">
             <h1>Student Management</h1>
-
-            <div style={{marginBottom: '16px'}}>
-                <button className="action-button" onClick={openAddModal} style={{marginRight: '16px'}}>
+            <div style={{ marginBottom: '16px' }}>
+                <button className="action-button" onClick={openAddModal} style={{ marginRight: '16px' }}>
                     Add Student
                 </button>
                 <a
                     href={`data:text/csv;charset=utf-8,${encodeURIComponent(sampleCsvContent)}`}
                     download="students_sample.csv"
-                    style={{marginRight: '16px'}}
+                    style={{ marginRight: '16px' }}
                 >
                     Download Sample CSV
                 </a>
@@ -279,20 +263,18 @@ const StudentManagement = () => {
                     cssClass="csv-reader-input"
                     label="Bulk Import Students (CSV): "
                     onFileLoaded={handleCSVImport}
-                    parserOptions={{header: true, skipEmptyLines: true}}
+                    parserOptions={{ header: true, skipEmptyLines: true }}
                     inputId="csvInput"
-                    inputStyle={{display: 'inline-block', marginLeft: '8px'}}
+                    inputStyle={{ display: 'inline-block', marginLeft: '8px' }}
                 />
             </div>
-
             <input
                 type="text"
                 placeholder="Search by name, class, ID, or vaccine"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                style={{marginBottom: '16px', padding: '6px', width: '300px'}}
+                style={{ marginBottom: '16px', padding: '6px', width: '300px' }}
             />
-
             <table>
                 <thead>
                 <tr>
@@ -300,7 +282,7 @@ const StudentManagement = () => {
                     <th rowSpan="2">ID</th>
                     <th rowSpan="2">Name</th>
                     <th rowSpan="2">Class</th>
-                    <th colSpan={vaccineTypes.length} style={{textAlign: 'center'}}>Vaccines</th>
+                    <th colSpan={vaccineTypes.length} style={{ textAlign: 'center' }}>Vaccines</th>
                     <th rowSpan="2">Actions</th>
                 </tr>
                 <tr>
@@ -333,7 +315,6 @@ const StudentManagement = () => {
                 ))}
                 </tbody>
             </table>
-
             <Modal
                 isOpen={modalIsOpen}
                 onRequestClose={closeModal}
@@ -352,7 +333,7 @@ const StudentManagement = () => {
             >
                 <h2>{isAddMode ? "Add Student" : "Edit Student Details"}</h2>
                 <form onSubmit={handleSubmit}>
-                    <div style={{marginBottom: '12px'}}>
+                    <div style={{ marginBottom: '12px' }}>
                         <label>
                             Name:
                             <input
@@ -360,30 +341,29 @@ const StudentManagement = () => {
                                 name="name"
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                style={{width: '100%', padding: '6px', marginTop: '4px'}}
+                                style={{ width: '100%', padding: '6px', marginTop: '4px' }}
                                 required
                             />
                         </label>
                     </div>
-                    <div style={{marginBottom: '12px'}}>
+                    <div style={{ marginBottom: '12px' }}>
                         <label>
                             ID:
                             <input
                                 type="text"
                                 name="id"
-                                value={isAddMode ? "(auto-generated)" : formData.id}
-                                readOnly
+                                value={formData.id}
+                                onChange={handleInputChange}
                                 style={{
                                     width: '100%',
                                     padding: '6px',
-                                    marginTop: '4px',
-                                    backgroundColor: '#eee',
-                                    cursor: 'not-allowed'
+                                    marginTop: '4px'
                                 }}
+                                required
                             />
                         </label>
                     </div>
-                    <div style={{marginBottom: '12px'}}>
+                    <div style={{ marginBottom: '12px' }}>
                         <label>
                             Class:
                             <input
@@ -391,18 +371,18 @@ const StudentManagement = () => {
                                 name="class"
                                 value={formData.class}
                                 onChange={handleInputChange}
-                                style={{width: '100%', padding: '6px', marginTop: '4px'}}
+                                style={{ width: '100%', padding: '6px', marginTop: '4px' }}
                                 required
                             />
                         </label>
                     </div>
-                    <fieldset style={{marginBottom: '12px'}}>
+                    <fieldset style={{ marginBottom: '12px' }}>
                         <legend>Vaccines</legend>
                         {vaccineTypes.map(vaccine => {
-                            const vaccineData = formData.vaccines[vaccine] || {hasVaccine: false, driveId: ''};
+                            const vaccineData = formData.vaccines[vaccine] || { hasVaccine: false, driveId: '' };
                             return (
-                                <div key={vaccine} style={{marginBottom: '8px'}}>
-                                    <label style={{marginRight: '10px'}}>
+                                <div key={vaccine} style={{ marginBottom: '8px' }}>
+                                    <label style={{ marginRight: '10px' }}>
                                         <input
                                             type="checkbox"
                                             checked={vaccineData.hasVaccine}
@@ -414,11 +394,11 @@ const StudentManagement = () => {
                                         <select
                                             value={vaccineData.driveId}
                                             onChange={(e) => handleDriveChange(vaccine, e.target.value)}
-                                            style={{marginLeft: '10px', padding: '4px'}}
+                                            style={{ marginLeft: '10px', padding: '4px' }}
                                             required
                                         >
                                             <option value="" disabled>Select Drive</option>
-                                            {stubbedDrives.map(drive => (
+                                            {drives.map(drive => (
                                                 <option key={drive.id} value={drive.id}>{drive.name}</option>
                                             ))}
                                         </select>
@@ -427,11 +407,11 @@ const StudentManagement = () => {
                             );
                         })}
                     </fieldset>
-                    <div style={{textAlign: 'right'}}>
+                    <div style={{ textAlign: 'right' }}>
                         <button
                             type="button"
                             onClick={closeModal}
-                            style={{marginRight: '10px', padding: '6px 12px'}}
+                            style={{ marginRight: '10px', padding: '6px 12px' }}
                         >
                             Cancel
                         </button>
@@ -452,4 +432,3 @@ const StudentManagement = () => {
 };
 
 export default StudentManagement;
-
