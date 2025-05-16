@@ -1,12 +1,19 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Paper, TablePagination, Button, TextField, MenuItem
+    Button,
+    MenuItem,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TablePagination,
+    TableRow,
+    TextField
 } from '@mui/material';
 import * as XLSX from 'xlsx';
 import './report.css';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 const BACKEND_URL = 'http://localhost:5000';
 
@@ -85,29 +92,6 @@ function Report() {
             const fileType = type === 'csv' ? 'csv' : 'xlsx';
             const fileName = `Vaccination_Report.${fileType}`;
             XLSX.writeFile(wb, fileName, {bookType: fileType});
-        } else if (type === 'pdf') {
-            // PDF Export Implementation
-            const doc = new jsPDF();
-
-            // Prepare columns and rows for autoTable
-            const columns = [
-                {header: 'Student Name', dataKey: 'Student Name'},
-                {header: 'Class', dataKey: 'Class'},
-                {header: 'Vaccinated Status', dataKey: 'Vaccinated Status'},
-                {header: 'Date of Vaccination', dataKey: 'Date of Vaccination'},
-                {header: 'Vaccine Name', dataKey: 'Vaccine Name'}
-            ];
-
-            doc.text('Vaccination Report', 14, 16);
-            doc.autoTable({
-                startY: 22,
-                columns: columns,
-                body: dataToExport,
-                styles: {fontSize: 10},
-                headStyles: {fillColor: [22, 160, 133]}
-            });
-
-            doc.save('Vaccination_Report.pdf');
         }
     }
 
@@ -178,14 +162,6 @@ function Report() {
                             className="report-download-btn"
                         >
                             Download Excel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => handleDownload('pdf')}
-                            className="report-download-btn"
-                        >
-                            Download PDF
                         </Button>
                     </div>
                 </>
