@@ -1,19 +1,11 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
-    Button,
-    MenuItem,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TextField
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    Paper, TablePagination, Button, TextField, MenuItem
 } from '@mui/material';
 import * as XLSX from 'xlsx';
 import './report.css';
+import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 const BACKEND_URL = 'http://localhost:5000';
@@ -86,7 +78,6 @@ function Report() {
             'Date of Vaccination': row.date,
             'Vaccine Name': row.vaccine,
         }));
-
         if (type === 'csv' || type === 'excel') {
             const ws = XLSX.utils.json_to_sheet(dataToExport);
             const wb = XLSX.utils.book_new();
