@@ -1,0 +1,25 @@
+.report-container {
+    padding: 24px;
+    margin: 24px auto;
+    max-width: 900px;
+}
+
+.report-filter {
+    margin-bottom: 16px;
+    min-width: 240px;
+}
+
+.report-downloads {
+    margin-top: 16px;
+}
+
+.report-download-btn {
+    margin-right: 12px;
+}
+
+.report-loading {
+    padding: 32px;
+    text-align: center;
+    font-size: 1.2em;
+    color: #888;
+}

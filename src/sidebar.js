@@ -22,6 +22,11 @@ const Sidebar = () => {
                         Student Management
                     </NavLink>
                 </li>
+                <li>
+                    <NavLink to="/reports" className={({ isActive }) => (isActive ? 'active' : '')}>
+                        Reports
+                    </NavLink>
+                </li>
             </ul>
         </div>
     );

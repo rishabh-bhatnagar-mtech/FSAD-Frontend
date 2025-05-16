@@ -6,6 +6,7 @@ import './App.css';
 import StudentManagement from "./student_management";
 import AuthGate from './login.js';
 import Dashboard from "./dashboard";
+import Reports from "./report.js"
 
 const App = () => {
     return (
@@ -23,6 +24,7 @@ const App = () => {
                                 <Route path="/dashboard" element={<Dashboard/>}/>
                                 <Route path="/vaccine-drive" element={<VaccineDrive/>}/>
                                 <Route path="/student-management" element={<StudentManagement/>}/>
+                                <Route path="/reports" element={<Reports/>}/>
                             </Routes>
                         </main>
                     </div>
