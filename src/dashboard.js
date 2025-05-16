@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Link } from 'react-router-dom';
 
 const COLORS = ['#1abc9c', '#e74c3c'];
 const BACKEND_URL = 'http://localhost:5000';
@@ -53,6 +54,24 @@ const Dashboard = () => {
 
     return (
         <div className="content">
+            <nav style={{
+                marginBottom: '2rem',
+                display: 'flex',
+                gap: '1.5rem',
+                background: '#f7f7f7',
+                padding: '1rem',
+                borderRadius: '8px'
+            }}>
+                <Link to="/student-management" style={{ fontWeight: 'bold', color: '#2980b9', textDecoration: 'none' }}>
+                    Manage Students
+                </Link>
+                <Link to="/vaccine-drive" style={{ fontWeight: 'bold', color: '#27ae60', textDecoration: 'none' }}>
+                    Vaccination Drives
+                </Link>
+                <Link to="/reports" style={{ fontWeight: 'bold', color: '#8e44ad', textDecoration: 'none' }}>
+                    Reports
+                </Link>
+            </nav>
             <h1>Dashboard</h1>
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
                 <div style={{ width: 300, height: 300 }}>
