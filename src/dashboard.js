@@ -14,7 +14,7 @@ const Dashboard = () => {
         const fetchStatsAndDrives = async () => {
             setLoading(true);
             try {
-                const statsRes = await fetch(BACKEND_URL + '/stats');
+                const statsRes = await fetch(BACKEND_URL + '/dashboard/stats');
                 const drivesRes = await fetch(BACKEND_URL + '/drives');
                 if (!statsRes.ok || !drivesRes.ok) throw new Error('Failed to fetch data');
                 const statsData = await statsRes.json();
