@@ -1,0 +1,42 @@
+graph TD
+    A[User<br>Browser] -->|HTTP<br>localhost:3000| B[Frontend<br>fsad-frontend]
+    B -->|HTTP API Calls<br>localhost:5000| C[Backend<br>fsad-backend]
+    C -->|SQL<br>localhost:5432| D[PostgreSQL<br>fsad<br>admin:password]
+
+    subgraph Frontend Components
+        B1[Node.js App<br>Node 22]
+        B2[Web Interface]
+        B3[HTTP Client]
+        B1 --> B2
+        B2 --> B3
+        B3 -->|Fetches Data| C
+    end
+
+    subgraph Backend Components
+        C1[Python 3.11 App<br>run.py]
+        C2[REST APIs]
+        C3[Database Service]
+        C1 --> C2
+        C2 --> C3
+        C3 --> D
+        subgraph APIs
+            C2A[GET /dashboard/stats]
+            C2B[GET /drives<br>POST /drives]
+            C2C[GET /students<br>POST /students<br>PUT /students/student_id
+            ]
+            C2 --> C2A
+            C2 --> C2B
+            C2 --> C2C
+        end
+    end
+
+    subgraph Database Components
+        D1[db_data Volume]
+        D --> D1
+    end
+
+    subgraph Docker Environment [Docker Network]
+        B
+        C
+        D
+    end
